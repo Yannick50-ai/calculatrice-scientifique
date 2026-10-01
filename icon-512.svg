@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Calculatrice scientifique">
+  <defs>
+    <style>
+      .bg { fill: #2d3d59; }
+      .screen { fill: #efe8d7; }
+      .screen-line { fill: #807a72; }
+      .button { fill: #f4f0e8; }
+      .button-red { fill: #df7a66; }
+      .button-blue { fill: #4d83d9; }
+    </style>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" rx="60" class="bg"/>
+  <rect x="66" y="70" width="380" height="110" rx="24" class="screen"/>
+  <rect x="122" y="118" width="268" height="22" rx="12" class="screen-line"/>
+
+  <rect x="96" y="220" width="72" height="52" rx="15" class="button"/>
+  <rect x="186" y="220" width="72" height="52" rx="15" class="button"/>
+  <rect x="276" y="220" width="72" height="52" rx="15" class="button"/>
+  <rect x="366" y="220" width="72" height="52" rx="15" class="button"/>
+
+  <rect x="96" y="292" width="72" height="52" rx="15" class="button"/>
+  <rect x="186" y="292" width="72" height="52" rx="15" class="button"/>
+  <rect x="276" y="292" width="72" height="52" rx="15" class="button"/>
+  <rect x="366" y="292" width="72" height="52" rx="15" class="button"/>
+
+  <rect x="96" y="364" width="128" height="52" rx="16" class="button-red"/>
+  <rect x="242" y="364" width="128" height="52" rx="16" class="button-blue"/>
+</svg>

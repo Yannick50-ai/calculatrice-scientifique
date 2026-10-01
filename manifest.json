@@ -1,0 +1,1153 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<meta name="theme-color" content="#272f44" />
+<meta name="description" content="Calculatrice scientifique façon calculatrice de collège : fonctions SHIFT, trigonométrie, historique, modes degrés/radians." />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Calculatrice" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/svg+xml" sizes="192x192" href="./icon-192.svg" />
+<link rel="icon" type="image/svg+xml" sizes="512x512" href="./icon-512.svg" />
+<link rel="apple-touch-icon" href="./icon-512.svg" />
+<title>Calculatrice Scientifique</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --page-bg: linear-gradient(140deg, #e2e9f6 0%, #c6d0e3 55%, #aeb9d2 100%);
+    --calc-bg: linear-gradient(155deg, #5d6b8a 0%, #39435d 48%, #272f44 100%);
+    --calc-edge: rgba(0,0,0,.45);
+    --lcd-bg: linear-gradient(180deg, #eff5e9 0%, #e2eada 100%);
+    --lcd-ink: #1b2a24;
+    --lcd-dim: #66766a;
+    --fn-bg: linear-gradient(180deg, #46536f 0%, #333c55 100%);
+    --fn-fg: #f2f5fb;
+    --sf: #ffd25f;
+    --num-bg: linear-gradient(180deg, #f4f6fa 0%, #dbdee6 100%);
+    --num-fg: #1c2434;
+    --op-bg: linear-gradient(180deg, #8b99bd 0%, #6c7a9e 100%);
+    --op-fg: #ffffff;
+    --eq-bg: linear-gradient(180deg, #3f7de0 0%, #245bb8 100%);
+    --eq-fg: #ffffff;
+    --util-bg: linear-gradient(180deg, #3a4358 0%, #2b3245 100%);
+    --util-fg: #e8ecf4;
+    --del-bg: linear-gradient(180deg, #5b8dd9 0%, #3a66ad 100%);
+    --ac-bg: linear-gradient(180deg, #e07a5f 0%, #b5523f 100%);
+    --shift-fg: #ffd25f;
+    --hist-row: rgba(27,42,36,.07);
+    --hist-row-h: rgba(27,42,36,.14);
+    --hint: #4a5266;
+    --err: #b3261e;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page-bg: linear-gradient(140deg, #141b2c 0%, #0c111d 70%);
+      --calc-bg: linear-gradient(155deg, #2d3652 0%, #1b2235 55%, #121722 100%);
+      --calc-edge: rgba(0,0,0,.7);
+      --lcd-bg: linear-gradient(180deg, #1a2436 0%, #111a28 100%);
+      --lcd-ink: #d8ecd2;
+      --lcd-dim: #8fa398;
+      --fn-bg: linear-gradient(180deg, #3b4663 0%, #2a3247 100%);
+      --num-bg: linear-gradient(180deg, #3a4260 0%, #2c3349 100%);
+      --num-fg: #eef2fa;
+      --op-bg: linear-gradient(180deg, #5a6c96 0%, #45526f 100%);
+      --util-bg: linear-gradient(180deg, #28304a 0%, #1c2336 100%);
+      --hist-row: rgba(216,236,210,.08);
+      --hist-row-h: rgba(216,236,210,.16);
+      --hint: #8b95ac;
+      --err: #ff9e8a;
+    }
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 12px;
+    background: var(--page-bg);
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif;
+    color: var(--hint);
+  }
+  .stage {
+    width: 100%;
+    max-width: 430px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .calc {
+    background: var(--calc-bg);
+    border-radius: 28px;
+    padding: 16px 14px 18px;
+    box-shadow:
+      0 24px 60px rgba(5,10,25,.45),
+      0 2px 0 rgba(255,255,255,.12) inset,
+      0 -2px 6px rgba(0,0,0,.25) inset;
+    border: 1px solid var(--calc-edge);
+  }
+  .screen {
+    position: relative;
+    background: var(--lcd-bg);
+    border-radius: 14px;
+    padding: 8px 12px 6px;
+    min-height: 172px;
+    box-shadow: inset 0 3px 10px rgba(0,0,0,.22), 0 1px 0 rgba(255,255,255,.15);
+    border: 1px solid rgba(0,0,0,.16);
+    overflow: hidden;
+    color: var(--lcd-ink);
+  }
+  .screen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(115deg, rgba(255,255,255,.14) 0%, rgba(255,255,255,0) 34%);
+  }
+  .status { display: flex; justify-content: space-between; align-items: center; min-height: 20px; margin-bottom: 2px; }
+  .badge { font-size: .62rem; font-weight: 700; letter-spacing: .1em; border-radius: 6px; padding: 2px 9px; line-height: 1.5; }
+  #indShift { background: #f5c443; color: #3b2a00; visibility: hidden; }
+  #indShift.on { visibility: visible; }
+  #indMode { color: var(--lcd-ink); border: 1.5px solid var(--lcd-dim); }
+  .exprWrap { overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+  .exprWrap::-webkit-scrollbar { display: none; }
+  .expr { font-family: var(--mono); font-size: 1.3rem; line-height: 1.5; min-height: 2em; white-space: nowrap; display: inline-block; min-width: 100%; padding: 2px 0; }
+  .expr .zero { color: var(--lcd-dim); opacity: .55; }
+  .expr .ghost { opacity: .35; }
+  .expr .npr { font-size: .8em; font-weight: 700; }
+  .expr sup, .res sup { font-size: .6em; line-height: 0; vertical-align: super; }
+  .caret { display: inline-block; width: 2.5px; height: 1.15em; background: var(--lcd-ink); vertical-align: -0.2em; margin: 0 1px; animation: blink 1.05s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .caret { animation: none; } }
+  .res { font-family: var(--mono); font-size: 1.72rem; font-weight: 600; line-height: 1.45; min-height: 2.5rem; text-align: right; white-space: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .res::-webkit-scrollbar { display: none; }
+  .res.err { color: var(--err); font-size: 1.15rem; font-weight: 700; padding-top: .35rem; }
+  .history { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; background: var(--lcd-bg); border-radius: 14px; padding: 8px 10px; }
+  .history[hidden] { display: none; }
+  .hHead { display: flex; justify-content: space-between; align-items: center; font-size: .8rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--lcd-ink); padding: 2px 2px 6px; border-bottom: 1px solid var(--lcd-dim); }
+  .hHead button, .hFoot button { font: inherit; border: 1px solid var(--lcd-dim); background: transparent; color: var(--lcd-ink); border-radius: 8px; padding: 4px 12px; cursor: pointer; }
+  .hHead button:active, .hFoot button:active { transform: translateY(1px); }
+  .hList { flex: 1; overflow-y: auto; padding: 6px 0; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+  .hRow { font-family: var(--mono); font-size: .95rem; text-align: left; color: var(--lcd-ink); background: var(--hist-row); border: 0; border-radius: 8px; padding: 7px 10px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+  .hRow:hover { background: var(--hist-row-h); }
+  .hRow .he { white-space: nowrap; overflow-x: auto; scrollbar-width: none; font-size: .85rem; opacity: .85; }
+  .hRow .he::-webkit-scrollbar { display: none; }
+  .hRow .hr { text-align: right; font-weight: 700; font-size: 1.05rem; }
+  .hRow .hr sup { font-size: .6em; line-height: 0; vertical-align: super; }
+  .hRow .hr.err { color: var(--err); font-weight: 700; font-size: .9rem; }
+  .hEmpty { color: var(--lcd-dim); font-size: .9rem; text-align: center; padding: 18px 8px; }
+  .hHint { font-size: .72rem; color: var(--lcd-dim); text-align: center; padding: 0 0 4px; }
+  .hFoot { display: flex; justify-content: center; padding-top: 6px; border-top: 1px solid var(--lcd-dim); }
+  .keys { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 14px; }
+  .k { border: 0; border-radius: 14px; min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; cursor: pointer; user-select: none; touch-action: manipulation; padding: 6px 2px; box-shadow: 0 3px 0 rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.22); transition: transform .05s ease, box-shadow .05s ease, filter .1s ease; }
+  .k:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.12); filter: brightness(.94); }
+  .k:focus-visible { outline: 2.5px solid #ffd25f; outline-offset: 2px; }
+  .k .sf { font-size: .6rem; line-height: 1; min-height: .95em; font-weight: 700; color: var(--sf); letter-spacing: .01em; }
+  .k .mn { font-size: 1.02rem; line-height: 1.15; font-weight: 600; }
+  .k.fn  { background: var(--fn-bg); } .k.fn .mn { color: var(--fn-fg); }
+  .k.num { background: var(--num-bg); } .k.num .mn { color: var(--num-fg); font-size: 1.32rem; font-weight: 700; }
+  .k.op  { background: var(--op-bg); } .k.op .mn { color: var(--op-fg); font-size: 1.25rem; }
+  .k.util { background: var(--util-bg); min-height: 50px; } .k.util .mn { color: var(--util-fg); font-size: .92rem; }
+  .k.eq { background: var(--eq-bg); } .k.eq .mn { color: var(--eq-fg); font-size: 1.35rem; font-weight: 700; }
+  .k.del { background: var(--del-bg); } .k.del .mn { color: #fff; }
+  .k.ac { background: var(--ac-bg); } .k.ac .mn { color: #fff; }
+  .k.shiftkey .mn { color: var(--shift-fg); }
+  .k.shiftkey.active { outline: 2.5px solid #ffd25f; outline-offset: 1px; filter: brightness(1.18); }
+  .k .mn.stretch { letter-spacing: -.03em; font-size: .82rem; }
+  .hint { margin: 2px 4px 0; font-size: .8rem; line-height: 1.6; text-align: center; color: var(--hint); }
+  .hint b { font-weight: 700; }
+  kbd { font-family: var(--mono); font-size: .74rem; border: 1px solid currentColor; border-radius: 5px; padding: 0 5px; opacity: .85; }
+  .installBtn { align-self: center; display: inline-flex; align-items: center; gap: 8px; appearance: none; background: transparent; border: 1px solid currentColor; border-radius: 999px; color: var(--hint); font: inherit; font-size: .82rem; font-weight: 600; padding: 7px 15px; cursor: pointer; opacity: .92; }
+  .installBtn[hidden] { display: none; }
+  .installBtn:hover { background: var(--hist-row); }
+  .installBtn:active { transform: translateY(1px); }
+  .installBtn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; }
+  .installNote[hidden] { display: none; }
+  .installNote { margin: 2px 4px 0; padding: 10px 14px; background: var(--hist-row); border: 1px solid var(--hist-row-h); border-radius: 12px; font-size: .8rem; line-height: 1.55; color: var(--hint); }
+  .installNote p { margin: 0; }
+  .installNote p + p { margin-top: 6px; }
+  .installNote b { font-weight: 700; }
+  .installDlg .warn { margin: 0 0 12px; font-size: .82rem; line-height: 1.55; color: var(--sf); }
+  .installDlg { border: none; border-radius: 18px; padding: 22px 24px 18px; max-width: 330px; width: calc(100% - 52px); background: linear-gradient(155deg, #3d4763 0%, #272f44 100%); color: #f0f3f9; font: inherit; box-shadow: 0 24px 70px rgba(0,0,0,.5), 0 2px 0 rgba(255,255,255,.12) inset; }
+  .installDlg::backdrop { background: rgba(8,12,22,.55); }
+  .installDlg h2 { margin: 0 0 14px; font-size: 1.02rem; font-weight: 700; }
+  .installDlg h3 { margin: 0 0 6px; font-size: .82rem; font-weight: 700; color: var(--sf); }
+  .installDlg ol { margin: 0 0 14px; padding-left: 20px; font-size: .85rem; line-height: 1.6; }
+  .installDlg ol li + li { margin-top: 3px; }
+  .installDlg .dlgClose { display: block; width: 100%; appearance: none; border: none; border-radius: 12px; background: var(--eq-bg); color: var(--eq-fg); font: inherit; font-weight: 700; font-size: .92rem; padding: 10px; cursor: pointer; }
+  .installDlg .dlgClose:active { filter: brightness(1.1); }
+  @media (max-width: 380px) {
+    .k .mn { font-size: .95rem; }
+    .k.num .mn { font-size: 1.2rem; }
+    .k { min-height: 52px; }
+    .expr { font-size: 1.18rem; }
+    .res { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="calc" id="calc" role="application" aria-label="Calculatrice scientifique">
+    <div class="screen" id="screen">
+      <div class="status">
+        <span class="badge" id="indShift">SHIFT</span>
+        <span class="badge" id="indMode">DEG</span>
+      </div>
+      <div class="exprWrap" id="exprWrap"><div class="expr" id="expr" aria-live="polite"></div></div>
+      <div class="res" id="res" aria-live="polite"></div>
+      <div class="history" id="hist" hidden>
+        <div class="hHead"><span>Historique</span><button id="hClose" aria-label="Fermer l'historique">Fermer ✕</button></div>
+        <div class="hList" id="hList"></div>
+        <div class="hHint">Touchez un calcul pour le réafficher à l'écran.</div>
+        <div class="hFoot"><button id="hClear">Effacer l'historique</button></div>
+      </div>
+    </div>
+
+    <div class="keys" id="keys">
+      <button class="k util shiftkey" data-k="shift" aria-label="Touche Shift : fonctions secondaires"><span class="sf"></span><span class="mn">SHIFT</span></button>
+      <button class="k util" data-k="replay" aria-label="Replay : consulter l'historique"><span class="sf"></span><span class="mn">REPLAY</span></button>
+      <button class="k util" data-k="mode" aria-label="Basculer entre degrés et radians"><span class="sf">MODE</span><span class="mn" id="modeLabel">DEG</span></button>
+      <button class="k util del" data-k="del" aria-label="Supprimer le dernier caractère"><span class="sf"></span><span class="mn">DEL</span></button>
+      <button class="k util ac" data-k="ac" aria-label="Tout effacer"><span class="sf"></span><span class="mn">AC</span></button>
+
+      <button class="k fn" data-k="fsin" data-s="fasin" aria-label="Sinus, Shift : sinus inverse"><span class="sf">sin⁻¹</span><span class="mn">sin</span></button>
+      <button class="k fn" data-k="fcos" data-s="facos" aria-label="Cosinus, Shift : cosinus inverse"><span class="sf">cos⁻¹</span><span class="mn">cos</span></button>
+      <button class="k fn" data-k="ftan" data-s="fatan" aria-label="Tangente, Shift : tangente inverse"><span class="sf">tan⁻¹</span><span class="mn">tan</span></button>
+      <button class="k fn" data-k="lp" aria-label="Parenthèse ouvrante"><span class="sf"></span><span class="mn">(</span></button>
+      <button class="k fn" data-k="rp" aria-label="Parenthèse fermante"><span class="sf"></span><span class="mn">)</span></button>
+
+      <button class="k fn" data-k="fsqrt" data-s="fcbrt" aria-label="Racine carrée, Shift : racine cubique"><span class="sf">∛</span><span class="mn">√</span></button>
+      <button class="k fn" data-k="p2" data-s="p3" aria-label="Carré, Shift : cube"><span class="sf">x³</span><span class="mn">x²</span></button>
+      <button class="k fn" data-k="pwr" data-s="nth" aria-label="Puissance, Shift : racine n-ième"><span class="sf">ʸ√x</span><span class="mn">xʸ</span></button>
+      <button class="k fn" data-k="flog" data-s="fp10" aria-label="Logarithme décimal, Shift : dix puissance"><span class="sf">10ˣ</span><span class="mn">log</span></button>
+      <button class="k fn" data-k="fln" data-s="fexp" aria-label="Logarithme népérien, Shift : e puissance"><span class="sf">eˣ</span><span class="mn">ln</span></button>
+
+      <button class="k fn" data-k="inv" aria-label="Inverse"><span class="sf"></span><span class="mn">x⁻¹</span></button>
+      <button class="k fn" data-k="fact" aria-label="Factorielle"><span class="sf"></span><span class="mn">n!</span></button>
+      <button class="k fn" data-k="npr" data-s="ncr" aria-label="Arrangements nPr, Shift : combinaisons nCr"><span class="sf">nCr</span><span class="mn">nPr</span></button>
+      <button class="k fn" data-k="pct" aria-label="Pourcentage"><span class="sf"></span><span class="mn">%</span></button>
+      <button class="k fn" data-k="exp" aria-label="Notation scientifique"><span class="sf"></span><span class="mn">EXP</span></button>
+
+      <button class="k num" data-k="d7" aria-label="7"><span class="sf"></span><span class="mn">7</span></button>
+      <button class="k num" data-k="d8" aria-label="8"><span class="sf"></span><span class="mn">8</span></button>
+      <button class="k num" data-k="d9" aria-label="9"><span class="sf"></span><span class="mn">9</span></button>
+      <button class="k op" data-k="div" aria-label="Divisé par"><span class="sf"></span><span class="mn">÷</span></button>
+      <button class="k num" data-k="pi" aria-label="Constante pi"><span class="sf"></span><span class="mn">π</span></button>
+
+      <button class="k num" data-k="d4" aria-label="4"><span class="sf"></span><span class="mn">4</span></button>
+      <button class="k num" data-k="d5" aria-label="5"><span class="sf"></span><span class="mn">5</span></button>
+      <button class="k num" data-k="d6" aria-label="6"><span class="sf"></span><span class="mn">6</span></button>
+      <button class="k op" data-k="mult" aria-label="Multiplié par"><span class="sf"></span><span class="mn">×</span></button>
+      <button class="k num" data-k="ei" aria-label="Constante e"><span class="sf"></span><span class="mn">e</span></button>
+
+      <button class="k num" data-k="d1" aria-label="1"><span class="sf"></span><span class="mn">1</span></button>
+      <button class="k num" data-k="d2" aria-label="2"><span class="sf"></span><span class="mn">2</span></button>
+      <button class="k num" data-k="d3" aria-label="3"><span class="sf"></span><span class="mn">3</span></button>
+      <button class="k op" data-k="sub" aria-label="Moins"><span class="sf"></span><span class="mn">−</span></button>
+      <button class="k fn" data-k="ans" aria-label="Réponse précédente"><span class="sf"></span><span class="mn">Ans</span></button>
+
+      <button class="k num" data-k="d0" aria-label="0"><span class="sf"></span><span class="mn">0</span></button>
+      <button class="k num" data-k="comma" aria-label="Virgule décimale"><span class="sf"></span><span class="mn">,</span></button>
+      <button class="k fn" data-k="abs" aria-label="Valeur absolue"><span class="sf"></span><span class="mn">|x|</span></button>
+      <button class="k eq" data-k="eq" aria-label="Égal"><span class="sf"></span><span class="mn">=</span></button>
+      <button class="k op" data-k="add" aria-label="Plus"><span class="sf"></span><span class="mn">+</span></button>
+    </div>
+  </div>
+
+  <p class="hint">
+    <b>Clavier :</b> chiffres, <kbd>+</kbd> <kbd>−</kbd> <kbd>×</kbd> <kbd>÷</kbd>, parenthèses,
+    <kbd>Entrée</kbd> = résultat, <kbd>←</kbd> = DEL, <kbd>Échap</kbd> = AC,
+    <kbd>↑</kbd><kbd>↓</kbd> = historique, <kbd>p</kbd> = π, <kbd>e</kbd> = e, <kbd>E</kbd> = EXP.
+  </p>
+
+  <button class="installBtn" id="installBtn" type="button" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0l-4.5-4.5M12 14l4.5-4.5M4 20h16" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Installer l'application
+  </button>
+  <div class="installNote" id="installNote" hidden>
+    <p><b>Installer la calculatrice :</b> ici, dans l'appli Muse, l'installation est impossible —
+    elle créerait l'icône de l'appli Muse et non celle de la calculatrice.</p>
+    <p>Pour l'installer : ouvrez la calculatrice <b>directement dans Chrome</b> (hors de l'appli Muse),
+    puis menu <b>⋮</b> → <b>Installer l'application</b>.</p>
+  </div>
+</div>
+
+<dialog class="installDlg" id="installDlg" aria-labelledby="installDlgTitle">
+  <h2 id="installDlgTitle">Installer l'application</h2>
+  <p class="warn">Ouvrez d'abord la calculatrice <b>directement dans Chrome</b> (hors de l'appli Muse) :
+  depuis l'appli Muse, c'est l'appli Muse qui s'installerait, pas la calculatrice.</p>
+  <h3>Sur Android (Chrome)</h3>
+  <ol>
+    <li>Ouvrez le menu <b>⋮</b> de Chrome.</li>
+    <li>Touchez <b>Installer l'application</b> ou <b>Ajouter à l'écran d'accueil</b>.</li>
+    <li>Confirmez : l'icône s'ajoute à votre écran d'accueil.</li>
+  </ol>
+  <h3>Sur iPhone / iPad (Safari)</h3>
+  <ol>
+    <li>Touchez l'icône <b>Partager</b>.</li>
+    <li>Choisissez <b>Sur l'écran d'accueil</b>, puis <b>Ajouter</b>.</li>
+  </ol>
+  <button class="dlgClose" id="installDlgClose" type="button">Fermer</button>
+</dialog>
+
+<script>
+"use strict";
+/* =====================================================================
+   Calculatrice scientifique façon « calculatrice de collège »
+   Moteur d'expression maison (shunting-yard), sans dépendance.
+   Tokens internes : num | op | fn | lp | rp | abL | abR | pi | ei | ans | post
+   ===================================================================== */
+
+/* ---------- État ---------- */
+var tokens = [];       // expression courante (jetons)
+var cursor = 0;        // position du curseur (entre les jetons, 0..tokens.length)
+var shiftOn = false;
+var degMode = true;    // true = degrés, false = radians
+var ans = 0;           // dernière réponse
+var justEval = false;  // vrai juste après un "="
+var resultText = null; // HTML du résultat affiché
+var resultErr = false;
+var histCalc = [];      // [{tokens, resHtml, err}]
+var histView = null;   // navigation clavier dans l'historique
+var histOpen = false;
+
+/* ---------- Références DOM ---------- */
+var $expr = document.getElementById("expr");
+var $res = document.getElementById("res");
+var $exprWrap = document.getElementById("exprWrap");
+var $indShift = document.getElementById("indShift");
+var $indMode = document.getElementById("indMode");
+var $modeLabel = document.getElementById("modeLabel");
+var $hist = document.getElementById("hist");
+var $hList = document.getElementById("hList");
+var shiftBtn = null;
+
+/* ---------- Étiquettes d'affichage ---------- */
+var FN_HTML = {
+  sin: "sin", cos: "cos", tan: "tan",
+  asin: "sin⁻¹", acos: "cos⁻¹", atan: "tan⁻¹",
+  log: "log", ln: "ln",
+  sqrt: "√", cbrt: "∛",
+  p10: "10^", exp: "e^"
+};
+var OP_HTML = {
+  "+": "+", "-": "−", "*": "×", "/": "÷", "^": "^",
+  npr: '<span class="npr">nPr</span>',
+  ncr: '<span class="npr">nCr</span>',
+  nth: '<span class="npr">ʸ√</span>'
+};
+var POST_HTML = { fact: "!", pct: "%", inv: "⁻¹", p2: "²", p3: "³" };
+
+var ERR_TXT = {
+  div0: "division par zéro",
+  domain: "résultat non défini",
+  fact: "factorielle : entier entre 0 et 170",
+  npr: "nPr / nCr : entiers, 0 ≤ r ≤ n",
+  overflow: "débordement",
+  incomplete: "expression incomplète",
+  syntax: "erreur de syntaxe"
+};
+
+function calcError(code) {
+  var e = new Error(code);
+  e.code = code;
+  return e;
+}
+
+/* =====================================================================
+   MOTEUR D'ÉVALUATION
+   ===================================================================== */
+
+function evalTokens(toks) {
+  var stream = [];
+  var open = 0;
+  function peek() { return stream.length ? stream[stream.length - 1] : null; }
+  function maybeMulFor(kind) {
+    var p = peek();
+    if (!p) return;
+    var pCan = p.t === "NUM" || p.t === "RP" || p.t === "POST";
+    var cCan = kind === "NUM" || kind === "FN" || kind === "LP";
+    if (pCan && cCan) stream.push({ t: "OP", v: "*" });
+  }
+  function pushOp(v) {
+    if (v === "-") {
+      var p = peek();
+      if (!p || p.t === "OP" || p.t === "LP" || p.t === "FN") {
+        stream.push({ t: "FN", v: "neg" });
+        return;
+      }
+    }
+    stream.push({ t: "OP", v: v });
+  }
+  for (var i = 0; i < toks.length; i++) {
+    var tk = toks[i];
+    if (tk.t === "num") { maybeMulFor("NUM"); stream.push({ t: "NUM", v: parseFloat(tk.v) }); }
+    else if (tk.t === "pi") { maybeMulFor("NUM"); stream.push({ t: "NUM", v: Math.PI }); }
+    else if (tk.t === "ei") { maybeMulFor("NUM"); stream.push({ t: "NUM", v: Math.E }); }
+    else if (tk.t === "ans") { maybeMulFor("NUM"); stream.push({ t: "NUM", v: ans }); }
+    else if (tk.t === "fn") { maybeMulFor("FN"); stream.push({ t: "FN", v: tk.v }); }
+    else if (tk.t === "lp") { maybeMulFor("LP"); stream.push({ t: "LP" }); open++; }
+    else if (tk.t === "rp") { if (open <= 0) throw calcError("syntax"); stream.push({ t: "RP" }); open--; }
+    else if (tk.t === "abL") { maybeMulFor("FN"); stream.push({ t: "FN", v: "abs" }); stream.push({ t: "LP" }); open++; }
+    else if (tk.t === "abR") { if (open <= 0) throw calcError("syntax"); stream.push({ t: "RP" }); open--; }
+    else if (tk.t === "op") { pushOp(tk.v); }
+    else if (tk.t === "post") { stream.push({ t: "POST", v: tk.v }); }
+  }
+  for (var k = 0; k < open; k++) stream.push({ t: "RP" });
+  var last = peek();
+  if (!last) throw calcError("incomplete");
+  if (last.t === "OP" || last.t === "FN" || last.t === "LP") throw calcError("incomplete");
+  return stream;
+}
+
+var PREC = { "+": 2, "-": 2, "*": 3, "/": 3, npr: 3, ncr: 3, "^": 4, nth: 4 };
+function isRightAssoc(v) { return v === "^" || v === "nth"; }
+
+function toRPN(stream) {
+  var out = [], st = [];
+  for (var i = 0; i < stream.length; i++) {
+    var e = stream[i];
+    if (e.t === "NUM" || e.t === "POST") { out.push(e); continue; }
+    if (e.t === "FN") { st.push(e); continue; }
+    if (e.t === "LP") { st.push(e); continue; }
+    if (e.t === "RP") {
+      while (st.length && st[st.length - 1].t !== "LP") out.push(st.pop());
+      if (!st.length) throw calcError("syntax");
+      st.pop();
+      if (st.length && st[st.length - 1].t === "FN") out.push(st.pop());
+      continue;
+    }
+    if (e.t === "OP") {
+      while (st.length) {
+        var t2 = st[st.length - 1];
+        if (t2.t !== "OP") break;
+        var p1 = PREC[e.v], p2 = PREC[t2.v];
+        if (p2 > p1 || (p2 === p1 && !isRightAssoc(e.v))) out.push(st.pop());
+        else break;
+      }
+      st.push(e);
+    }
+  }
+  while (st.length) {
+    var t = st.pop();
+    if (t.t === "LP") throw calcError("syntax");
+    out.push(t);
+  }
+  return out;
+}
+
+function popNum(vs) {
+  var v = vs.pop();
+  if (v === undefined) throw calcError("incomplete");
+  return v;
+}
+function chk(x) { if (!isFinite(x)) throw calcError("overflow"); return x; }
+function isInt(x) { return typeof x === "number" && isFinite(x) && Math.floor(x) === x; }
+
+function apply2(v, a, b) {
+  var r;
+  switch (v) {
+    case "+": r = a + b; break;
+    case "-": r = a - b; break;
+    case "*": r = a * b; break;
+    case "/":
+      if (b === 0) throw calcError("div0");
+      r = a / b; break;
+    case "^":
+      r = Math.pow(a, b);
+      if (isNaN(r)) throw calcError("domain");
+      break;
+    case "nth":
+      if (a === 0) throw calcError("domain");
+      if (b < 0) {
+        if (isInt(a) && a > 0 && a % 2 === 1) r = -Math.pow(-b, 1 / a);
+        else throw calcError("domain");
+      } else {
+        r = Math.pow(b, 1 / a);
+        if (isNaN(r)) throw calcError("domain");
+      }
+      break;
+    case "npr":
+      if (!isInt(a) || !isInt(b) || a < 0 || b < 0 || b > a) throw calcError("npr");
+      r = 1;
+      for (var i = a - b + 1; i <= a; i++) r *= i;
+      break;
+    case "ncr":
+      if (!isInt(a) || !isInt(b) || a < 0 || b < 0 || b > a) throw calcError("npr");
+      var k = Math.min(b, a - b);
+      r = 1;
+      for (var j = 1; j <= k; j++) r = r * (a - k + j) / j;
+      r = Math.round(r);
+      break;
+    default: throw calcError("syntax");
+  }
+  return chk(r);
+}
+
+var TRIG_SNAP = 1e-14;
+function snapTiny(x, unit) {
+  var tol = unit === "deg" ? 1e-12 : TRIG_SNAP;
+  return Math.abs(x) < tol ? 0 : x;
+}
+
+function apply1(v, a) {
+  var r, x;
+  switch (v) {
+    case "neg": r = -a; break;
+    case "sin":
+      x = degMode ? a * Math.PI / 180 : a;
+      r = snapTiny(Math.sin(x), "rad"); break;
+    case "cos":
+      x = degMode ? a * Math.PI / 180 : a;
+      r = snapTiny(Math.cos(x), "rad"); break;
+    case "tan":
+      x = degMode ? a * Math.PI / 180 : a;
+      if (Math.abs(Math.cos(x)) < 1e-15) throw calcError("domain");
+      r = snapTiny(Math.tan(x), "rad"); break;
+    case "asin":
+      if (Math.abs(a) > 1) throw calcError("domain");
+      r = Math.asin(a); r = degMode ? r * 180 / Math.PI : r; break;
+    case "acos":
+      if (Math.abs(a) > 1) throw calcError("domain");
+      r = Math.acos(a); r = degMode ? r * 180 / Math.PI : r; break;
+    case "atan":
+      r = Math.atan(a); r = degMode ? r * 180 / Math.PI : r; break;
+    case "log":
+      if (a <= 0) throw calcError("domain");
+      r = Math.log10(a); break;
+    case "ln":
+      if (a <= 0) throw calcError("domain");
+      r = Math.log(a); break;
+    case "sqrt":
+      if (a < 0) throw calcError("domain");
+      r = Math.sqrt(a); break;
+    case "cbrt": r = Math.cbrt(a); break;
+    case "p10": r = Math.pow(10, a); break;
+    case "exp": r = Math.exp(a); break;
+    case "abs": r = Math.abs(a); break;
+    default: throw calcError("syntax");
+  }
+  if (r === 0) r = 0;
+  return chk(r);
+}
+
+function applyPost(v, a) {
+  var r, i;
+  switch (v) {
+    case "fact":
+      if (!isInt(a) || a < 0 || a > 170) throw calcError("fact");
+      r = 1;
+      for (i = 2; i <= a; i++) r *= i;
+      break;
+    case "pct": r = a / 100; break;
+    case "inv":
+      if (a === 0) throw calcError("div0");
+      r = 1 / a; break;
+    case "p2": r = a * a; break;
+    case "p3": r = a * a * a; break;
+    default: throw calcError("syntax");
+  }
+  return chk(r);
+}
+
+function evaluate(toks) {
+  var stream = evalTokens(toks);
+  var rpn = toRPN(stream);
+  if (rpn.length === 0) throw calcError("incomplete");
+  var vs = [];
+  for (var i = 0; i < rpn.length; i++) {
+    var e = rpn[i];
+    if (e.t === "NUM") { vs.push(e.v); continue; }
+    if (e.t === "OP") {
+      var b = popNum(vs), a = popNum(vs);
+      vs.push(apply2(e.v, a, b)); continue;
+    }
+    if (e.t === "FN") { vs.push(apply1(e.v, popNum(vs))); continue; }
+    if (e.t === "POST") { vs.push(applyPost(e.v, popNum(vs))); continue; }
+  }
+  if (vs.length !== 1) throw calcError("syntax");
+  return vs[0];
+}
+
+function trimNum(s) {
+  if (s.indexOf("e") !== -1 || s.indexOf("E") !== -1) return s;
+  if (s.indexOf(".") !== -1) s = s.replace(/0+$/, "").replace(/\.$/, "");
+  s = s.replace(".", ",");
+  if (s === "-0" || s === "−0") s = "0";
+  return s;
+}
+
+function fmt(x) {
+  if (typeof x !== "number" || isNaN(x)) return { html: "—", err: false };
+  if (!isFinite(x)) return { html: "Erreur : débordement", err: true };
+  if (x === 0) return { html: "0", err: false };
+  var ax = Math.abs(x);
+  var sci = ax >= 1e10 || ax < 1e-9;
+  var html;
+  if (sci) {
+    var e = Math.floor(Math.log10(ax) + 1e-12);
+    var m = x / Math.pow(10, e);
+    var s = trimNum(m.toPrecision(9));
+    if (parseFloat(s) >= 10) { m = m / 10; e += 1; s = trimNum(m.toPrecision(9)); }
+    html = s + "×10<sup>" + String(e).replace("-", "−") + "</sup>";
+  } else {
+    var t = trimNum(x.toPrecision(10));
+    if (/e/i.test(t)) {
+      var v = parseFloat(t);
+      var e2 = Math.floor(Math.log10(Math.abs(v)) + 1e-12);
+      var m2 = v / Math.pow(10, e2);
+      html = trimNum(m2.toPrecision(9)) + "×10<sup>" + String(e2).replace("-", "−") + "</sup>";
+    } else html = t;
+  }
+  return { html: html, err: false };
+}
+
+function numTokensFromNumber(x) {
+  if (!isFinite(x) || x === 0) return [{ t: "num", v: "0" }];
+  var neg = x < 0;
+  var a = Math.abs(x);
+  var s = String(parseFloat(a.toPrecision(12)));
+  s = s.replace("e", "E").replace("E+", "E");
+  var arr = [{ t: "num", v: s }];
+  if (neg) arr.unshift({ t: "op", v: "-" });
+  return arr;
+}
+
+function numHTML(v) {
+  var parts = v.split("E");
+  var h = parts[0].replace(".", ",");
+  if (parts.length > 1) {
+    h += "×10";
+    if (parts[1]) h += "<sup>" + parts[1].replace("-", "−") + "</sup>";
+  }
+  return h;
+}
+
+function tokHTML(tk) {
+  switch (tk.t) {
+    case "num": return numHTML(tk.v);
+    case "op": return OP_HTML[tk.v] || tk.v;
+    case "fn": return FN_HTML[tk.v] || tk.v;
+    case "lp": return "(";
+    case "rp": return ")";
+    case "abL": return "|";
+    case "abR": return "|";
+    case "pi": return "π";
+    case "ei": return "e";
+    case "ans": return '<span style="font-style:normal;font-weight:700">Ans</span>';
+    case "post": return POST_HTML[tk.v] || "";
+  }
+  return "";
+}
+
+function collectPowChunk(arr, j) {
+  var neg = false, k = j;
+  if (k < arr.length && arr[k].t === "op" && arr[k].v === "-") { neg = true; k++; }
+  if (k >= arr.length) return null;
+  var tk = arr[k];
+  var isSimple = tk.t === "num" || tk.t === "pi" || tk.t === "ei" || tk.t === "ans";
+  if (isSimple) {
+    return { toks: [tk], end: k, neg: neg };
+  }
+  if (tk.t === "lp" || tk.t === "abL") {
+    var depth = 0, end = -1;
+    for (var i = k; i < arr.length; i++) {
+      var t = arr[i].t;
+      if (t === "lp" || t === "abL") depth++;
+      if (t === "rp" || t === "abR") depth--;
+      if (depth === 0) { end = i; break; }
+    }
+    if (end < 0) end = arr.length - 1;
+    return { toks: arr.slice(k, end + 1), end: end, neg: neg };
+  }
+  return null;
+}
+
+function renderTokensInner(arr, cursorPos) {
+  var out = [];
+  for (var i = 0; i < arr.length; i++) {
+    if (i === cursorPos) out.push('<span class="caret" aria-hidden="true"></span>');
+    var tk = arr[i];
+    if (tk.t === "op" && tk.v === "^") {
+      var ch = collectPowChunk(arr, i + 1);
+      if (ch) {
+        var inner = renderTokensInner(ch.toks, -1);
+        out.push("<sup>" + (ch.neg ? "−" : "") + inner + "</sup>");
+        i = ch.end;
+        continue;
+      }
+    }
+    out.push(tokHTML(tk));
+  }
+  if (arr.length === cursorPos) out.push('<span class="caret" aria-hidden="true"></span>');
+  return out.join("");
+}
+
+function ghostStr(arr) {
+  var dPar = 0, dAbs = 0;
+  for (var i = 0; i < arr.length; i++) {
+    var t = arr[i].t;
+    if (t === "lp") dPar++;
+    else if (t === "rp") dPar--;
+    else if (t === "abL") dAbs++;
+    else if (t === "abR") dAbs--;
+  }
+  var g = "";
+  for (var a = 0; a < dPar; a++) g += ")";
+  for (var b = 0; b < dAbs; b++) g += "|";
+  return g;
+}
+
+function renderExprHTML(arr, cursorPos, withGhost) {
+  if (arr.length === 0) return '<span class="zero">0</span>';
+  var html = renderTokensInner(arr, cursorPos);
+  if (withGhost) {
+    var g = ghostStr(arr);
+    if (g) html += '<span class="ghost">' + g + "</span>";
+  }
+  return html;
+}
+
+function insertTokens(arr) {
+  tokens.splice.apply(tokens, [cursor, 0].concat(arr));
+  cursor += arr.length;
+  justEval = false;
+  resultText = null;
+  resultErr = false;
+  histView = null;
+}
+function freshStart() {
+  if (justEval) { tokens = []; cursor = 0; resultText = null; resultErr = false; }
+  histView = null;
+}
+function valueLike(tk) {
+  return tk && (tk.t === "num" || tk.t === "pi" || tk.t === "ei" || tk.t === "ans" ||
+    tk.t === "rp" || tk.t === "abR" || tk.t === "post");
+}
+function unclosedLP() {
+  var d = 0;
+  for (var i = 0; i < tokens.length; i++) {
+    if (tokens[i].t === "lp") d++;
+    else if (tokens[i].t === "rp") d--;
+  }
+  return d;
+}
+
+function canAppendNumChar(v, ch) {
+  if (v.length >= 18) return false;
+  if (ch === ".") return v.indexOf(".") === -1 && v.indexOf("E") === -1;
+  if (ch === "E") return v.indexOf("E") === -1 && /[0-9]$/.test(v);
+  return true;
+}
+
+function addDigit(ch) {
+  freshStart();
+  var left = tokens[cursor - 1], right = tokens[cursor];
+  if (left && left.t === "num") {
+    if (canAppendNumChar(left.v, ch)) left.v += ch;
+    return;
+  }
+  if (right && right.t === "num" && (!left || left.t !== "num")) {
+    if (ch === ".") { if (right.v.indexOf(".") === -1 && right.v.indexOf("E") === -1) right.v = "0." + right.v; }
+    else right.v = ch + right.v;
+    return;
+  }
+  if (ch === ".") insertTokens([{ t: "num", v: "0." }]);
+  else insertTokens([{ t: "num", v: ch }]);
+}
+
+function addEXP() {
+  if (justEval) {
+    tokens = numTokensFromNumber(ans);
+    cursor = tokens.length; justEval = false; resultText = null; resultErr = false;
+  }
+  var left = tokens[cursor - 1];
+  if (left && left.t === "num" && canAppendNumChar(left.v, "E")) left.v += "E";
+}
+
+function expMinusSign() {
+  var left = tokens[cursor - 1];
+  if (left && left.t === "num" && /\dE$/.test(left.v)) { left.v += "-"; return true; }
+  if (left && left.t === "num" && /E-$/.test(left.v)) { left.v = left.v.slice(0, -1); return true; }
+  return false;
+}
+
+function addOp(v) {
+  if (tokens.length === 0 || (justEval && v !== undefined)) {
+    tokens = [{ t: "ans" }];
+    cursor = 1; justEval = false; resultText = null; resultErr = false;
+  }
+  histView = null;
+  var left = tokens[cursor - 1];
+  if (left && left.t === "op") {
+    if (v === "-") insertTokens([{ t: "op", v: "-" }]);
+    else left.v = v;
+    return;
+  }
+  if (left && (left.t === "lp" || left.t === "fn" || left.t === "abL")) {
+    if (v === "-") insertTokens([{ t: "op", v: "-" }]);
+    return;
+  }
+  if (!left && v !== "-") return;
+  insertTokens([{ t: "op", v: v }]);
+}
+
+function addFunc(f) {
+  freshStart();
+  insertTokens([{ t: "fn", v: f }, { t: "lp" }]);
+}
+
+function addPost(v) {
+  if (justEval) { tokens = [{ t: "ans" }]; cursor = 1; justEval = false; resultText = null; resultErr = false; }
+  var left = tokens[cursor - 1];
+  if (!valueLike(left)) insertTokens([{ t: "ans" }, { t: "post", v: v }]);
+  else insertTokens([{ t: "post", v: v }]);
+}
+
+function backspace() {
+  if (justEval) {
+    tokens = numTokensFromNumber(ans);
+    cursor = tokens.length;
+    justEval = false; resultText = null; resultErr = false;
+  }
+  histView = null;
+  if (cursor <= 0) return;
+  var i = cursor - 1, tk = tokens[i];
+  if (tk.t === "num") {
+    if (tk.v.length > 1) tk.v = tk.v.slice(0, -1);
+    else { tokens.splice(i, 1); cursor--; }
+  } else if (tk.t === "lp" && i > 0 && tokens[i - 1].t === "fn") {
+    tokens.splice(i - 1, 2); cursor -= 2;
+  } else if (tk.t === "abL" && tokens[i + 1] && tokens[i + 1].t === "abR") {
+    tokens.splice(i, 2);
+  } else {
+    tokens.splice(i, 1); cursor--;
+  }
+}
+
+function clearAll() {
+  tokens = []; cursor = 0;
+  resultText = null; resultErr = false;
+  justEval = false; histView = null;
+}
+
+function doEquals() {
+  closeHist();
+  if (tokens.length === 0) return;
+  var copy = JSON.parse(JSON.stringify(tokens));
+  try {
+    var v = evaluate(copy);
+    var f = fmt(v);
+    if (f.err) throw calcError(f.html.indexOf("débordement") !== -1 ? "overflow" : "syntax");
+    histCalc.push({ tokens: copy, resHtml: f.html, err: null });
+    if (histCalc.length > 60) histCalc.shift();
+    ans = v;
+    justEval = true;
+    histView = null;
+    resultText = f.html;
+    resultErr = false;
+  } catch (e) {
+    var code = e && e.code ? e.code : "syntax";
+    var msg = "Erreur : " + (ERR_TXT[code] || ERR_TXT.syntax);
+    histCalc.push({ tokens: copy, resHtml: msg, err: msg });
+    if (histCalc.length > 60) histCalc.shift();
+    resultText = msg;
+    resultErr = true;
+    justEval = false;
+    histView = null;
+  }
+}
+
+function handleKey(id) {
+  if (id.charAt(0) === "d" && id.length === 2) { addDigit(id.charAt(1)); return; }
+  switch (id) {
+    case "comma": addDigit("."); break;
+    case "exp": addEXP(); break;
+    case "add": addOp("+"); break;
+    case "sub":
+      if (!expMinusSign()) addOp("-");
+      break;
+    case "mult": addOp("*"); break;
+    case "div": addOp("/"); break;
+    case "pwr": addOp("^"); break;
+    case "npr": addOp("npr"); break;
+    case "ncr": addOp("ncr"); break;
+    case "nth": addOp("nth"); break;
+    case "fsin": addFunc("sin"); break;
+    case "fcos": addFunc("cos"); break;
+    case "ftan": addFunc("tan"); break;
+    case "fasin": addFunc("asin"); break;
+    case "facos": addFunc("acos"); break;
+    case "fatan": addFunc("atan"); break;
+    case "flog": addFunc("log"); break;
+    case "fln": addFunc("ln"); break;
+    case "fsqrt": addFunc("sqrt"); break;
+    case "fcbrt": addFunc("cbrt"); break;
+    case "fp10": addFunc("p10"); break;
+    case "fexp": addFunc("exp"); break;
+    case "fact": addPost("fact"); break;
+    case "pct": addPost("pct"); break;
+    case "inv": addPost("inv"); break;
+    case "p2": addPost("p2"); break;
+    case "p3": addPost("p3"); break;
+    case "lp": freshStart(); insertTokens([{ t: "lp" }]); break;
+    case "rp":
+      if (!justEval && unclosedLP() > 0) insertTokens([{ t: "rp" }]);
+      break;
+    case "abs":
+      freshStart();
+      insertTokens([{ t: "abL" }, { t: "abR" }]);
+      cursor--;
+      break;
+    case "pi": freshStart(); insertTokens([{ t: "pi" }]); break;
+    case "ei": freshStart(); insertTokens([{ t: "ei" }]); break;
+    case "ans": freshStart(); insertTokens([{ t: "ans" }]); break;
+    case "del": backspace(); break;
+    case "ac": clearAll(); break;
+    case "eq": doEquals(); break;
+    case "mode": setDeg(!degMode); break;
+  }
+}
+
+function setShift(v) {
+  shiftOn = v;
+  $indShift.classList.toggle("on", v);
+  if (shiftBtn) shiftBtn.classList.toggle("active", v);
+}
+function setDeg(v) {
+  degMode = v;
+  $indMode.textContent = v ? "DEG" : "RAD";
+  $modeLabel.textContent = v ? "DEG" : "RAD";
+}
+
+function pressButton(btn) {
+  var id = btn.getAttribute("data-k");
+  if (id === "shift") { setShift(!shiftOn); return; }
+  var actual = id;
+  if (shiftOn) {
+    var s = btn.getAttribute("data-s");
+    if (s) actual = s;
+  }
+  if (histOpen && actual !== "replay") closeHist();
+  setShift(false);
+  if (actual === "replay") { toggleHist(); return; }
+  handleKey(actual);
+  render();
+  scrollToCaret();
+}
+
+function tap(id) {
+  if (histOpen && id !== "replay") closeHist();
+  setShift(false);
+  if (id === "replay") { toggleHist(); return; }
+  handleKey(id);
+  render();
+  scrollToCaret();
+}
+
+function openHist() {
+  histOpen = true;
+  $hist.hidden = false;
+  renderHistList();
+}
+function closeHist() {
+  histOpen = false;
+  $hist.hidden = true;
+}
+function toggleHist() {
+  if (histOpen) closeHist();
+  else openHist();
+}
+function renderHistList() {
+  $hList.innerHTML = "";
+  if (histCalc.length === 0) {
+    var d = document.createElement("div");
+    d.className = "hEmpty";
+    d.textContent = "Aucun calcul pour le moment.";
+    $hList.appendChild(d);
+    return;
+  }
+  for (var i = histCalc.length - 1; i >= 0; i--) {
+    (function (entry) {
+      var row = document.createElement("button");
+      row.className = "hRow";
+      row.setAttribute("aria-label", "Rappeler ce calcul");
+      var e = document.createElement("div");
+      e.className = "he";
+      e.innerHTML = renderExprHTML(entry.tokens, -1, false);
+      var r = document.createElement("div");
+      r.className = "hr" + (entry.err ? " err" : "");
+      r.innerHTML = entry.resHtml;
+      row.appendChild(e);
+      row.appendChild(r);
+      row.addEventListener("click", function () {
+        tokens = JSON.parse(JSON.stringify(entry.tokens));
+        cursor = tokens.length;
+        justEval = false; resultText = null; resultErr = false; histView = null;
+        closeHist();
+        render();
+        scrollToCaret();
+      });
+      $hList.appendChild(row);
+    })(histCalc[i]);
+  }
+}
+
+function histNav(dir) {
+  if (histCalc.length === 0) return;
+  if (histOpen) closeHist();
+  if (dir === "up") {
+    if (histView === null) histView = 0;
+    else histView = Math.min(histCalc.length - 1, histView + 1);
+  } else {
+    if (histView === null) return;
+    histView--;
+    if (histView < 0) {
+      histView = null;
+      tokens = []; cursor = 0;
+      justEval = false; resultText = null; resultErr = false;
+      render(); scrollToCaret(); return;
+    }
+  }
+  var entry = histCalc[histCalc.length - 1 - histView];
+  tokens = JSON.parse(JSON.stringify(entry.tokens));
+  cursor = tokens.length;
+  justEval = false; resultText = null; resultErr = false;
+  render(); scrollToCaret();
+}
+
+function render() {
+  $expr.innerHTML = renderExprHTML(tokens, cursor, true);
+  if (resultText !== null) {
+    $res.innerHTML = resultText;
+    $res.classList.toggle("err", resultErr);
+  } else {
+    $res.innerHTML = "";
+    $res.classList.remove("err");
+  }
+  $indMode.textContent = degMode ? "DEG" : "RAD";
+  $modeLabel.textContent = degMode ? "DEG" : "RAD";
+}
+
+function scrollToCaret() {
+  var c = $expr.querySelector(".caret");
+  if (c) {
+    var target = c.offsetLeft - $exprWrap.clientWidth + 60;
+    $exprWrap.scrollLeft = Math.max(0, target);
+  } else {
+    $exprWrap.scrollLeft = $exprWrap.scrollWidth;
+  }
+  $res.scrollLeft = $res.scrollWidth;
+}
+
+(function wireKeys() {
+  var btns = document.querySelectorAll(".k");
+  for (var i = 0; i < btns.length; i++) {
+    (function (btn) {
+      if (btn.getAttribute("data-k") === "shift") shiftBtn = btn;
+      btn.addEventListener("click", function () { pressButton(btn); });
+    })(btns[i]);
+  }
+})();
+
+document.getElementById("hClose").addEventListener("click", closeHist);
+document.getElementById("hClear").addEventListener("click", function () {
+  histCalc = []; histView = null;
+  renderHistList();
+});
+
+var KEYMAP = {
+  "0": "d0", "1": "d1", "2": "d2", "3": "d3", "4": "d4",
+  "5": "d5", "6": "d6", "7": "d7", "8": "d8", "9": "d9",
+  ",": "comma", ".": "comma",
+  "+": "add", "-": "sub", "*": "mult", "/": "div", "^": "pwr",
+  "!": "fact", "%": "pct", "(": "lp", ")": "rp",
+  "=": "eq", "Enter": "eq",
+  "Backspace": "del", "Escape": "ac", "Delete": "ac",
+  "p": "pi", "P": "pi", "e": "ei", "E": "exp"
+};
+
+window.addEventListener("keydown", function (e) {
+  var k = e.key;
+  if (k === "ArrowUp") { e.preventDefault(); histNav("up"); return; }
+  if (k === "ArrowDown") { e.preventDefault(); histNav("down"); return; }
+  if (k === "ArrowLeft") { e.preventDefault(); cursor = Math.max(0, cursor - 1); render(); scrollToCaret(); return; }
+  if (k === "ArrowRight") { e.preventDefault(); cursor = Math.min(tokens.length, cursor + 1); render(); scrollToCaret(); return; }
+  var id = KEYMAP[k];
+  if (!id) return;
+  e.preventDefault();
+  tap(id);
+});
+
+render();
+
+(function pwa() {
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      try {
+        navigator.serviceWorker.register("./sw.js").catch(function () { /* indisponible : rien à faire */ });
+      } catch (e) { /* navigateur non pris en charge */ }
+    });
+  }
+
+  var installBtn = document.getElementById("installBtn");
+  var installNote = document.getElementById("installNote");
+  var dlg = document.getElementById("installDlg");
+  var dlgClose = document.getElementById("installDlgClose");
+  var deferredPrompt = null;
+  var isStandalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (window.navigator.standalone === true);
+  var inFrame = (function () {
+    try { return window.self !== window.top; } catch (e) { return true; }
+  })();
+
+  window.addEventListener("beforeinstallprompt", function (e) {
+    if (inFrame) return;
+    e.preventDefault();
+    deferredPrompt = e;
+    if (!isStandalone) installBtn.hidden = false;
+  });
+
+  if (!isStandalone) {
+    if (inFrame) {
+      if (installNote) installNote.hidden = false;
+    } else {
+      installBtn.hidden = false;
+    }
+  }
+
+  installBtn.addEventListener("click", function () {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function () { deferredPrompt = null; });
+    } else if (dlg && typeof dlg.showModal === "function") {
+      dlg.showModal();
+    }
+  });
+
+  if (dlg) {
+    if (dlgClose) dlgClose.addEventListener("click", function () { dlg.close(); });
+    dlg.addEventListener("click", function (e) {
+      if (e.target === dlg) dlg.close();
+    });
+  }
+
+  window.addEventListener("appinstalled", function () { installBtn.hidden = true; });
+})();
+
+window.__calc = {
+  getState: function () {
+    return { tokens: tokens, cursor: cursor, deg: degMode, ans: ans, histCalc: histCalc.length };
+  }
+};
+</script>
+</body>
+</html>
